@@ -1,3 +1,6 @@
+// Variables used by Scriptable.
+// These must be at the very top of the file. Do not edit.
+// icon-color: deep-gray; icon-glyph: magic;
 // Fetch list of repos
 let secretKey = "" // Find in Working Copy app settings
 let url = "working-copy://x-callback-url/repos"
