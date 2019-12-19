@@ -1,3 +1,6 @@
+// Variables used by Scriptable.
+// These must be at the very top of the file. Do not edit.
+// icon-color: deep-green; icon-glyph: magic;
 @Icon filing
 @Color darkblue
 Comment "LaunchCuts is a powerful, customizable, and elegant launcher for your shortcuts. Organize them into folders, manually or automatically with keywords."
