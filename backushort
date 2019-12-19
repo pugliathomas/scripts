@@ -1,0 +1,96 @@
+https://talk.automators.fm/t/more-example-scripts/1401/23
+
+Backup Shortcuts
+Inspired by Rosemarys shortcut to backup shortcuts 77, I’ve created a shortcut/script that backs up shortcuts to a Git repository using Working Copy.
+
+Prerequisites:
+
+Create a directory in Working Copy you want to backup your scripts into.
+Set the key variable to your Working Copys URL key. You’ll find it in Working Copy -> Settings -> App Integrations.
+The following operations are performed:
+
+Shortcuts: Removes all files in the Shortcuts/Export directory in iCloud.
+Shortcuts: Copies all shortcuts into the Shortcuts/Export directory in iCloud.
+Shortcuts: Opens Scriptable to run a script.
+Scriptable: Prompts you to select the Shortcuts/Export directory in order to grant Scriptable access to its content.
+Scriptable: Prompts you to select the repository in Working Copy to backup scripts to in order to grant Scriptable access to its content.
+Scriptable: Copies files from the Shortcuts/Export directory into the repository.
+Scriptable: Opens Working Copy to commit and push the changes.
+Working Copy: Commits and pushes changes.
+Working Copy: Opens Scriptable to complete the flow.
+Scriptable: Opens Shortcuts to complete the flow.
+You’ll need this Shortcut which you run to start the backup:
+https://www.icloud.com/shortcuts/c2f36e770ac7465caebe33bdd583d873 117
+
+Script:
+
+// Find your key in Working Copy and insert it below. This is required by Working Copy in order to perform operations.
+let key = ""
+await promptDirSelection("Please navigate to the Shortcuts folder in iCloud Drive and open the Export folder.")
+let fm = FileManager.iCloud()
+let shortcutsDirs = await DocumentPicker.open(["public.folder"])
+let shortcutsDir = shortcutsDirs[0]
+let filePaths = allFiles(shortcutsDir)
+await promptDirSelection("Please use the Working Copy file provider to open the repository you want to back up to.")
+let repoDirs = await DocumentPicker.open(["public.folder"])
+let repoDir = repoDirs[0]
+let repoName = fm.fileName(repoDir)
+removeFiles(repoDir)
+for (filePath of filePaths) {
+  copyFile(filePath, repoDir)
+}
+await pushChanges(repoName, key)
+let params = URLScheme.allParameters()
+let url = params["x-success"]
+Safari.open(url)
+
+async function pushChanges(repo, key) {
+  let baseURL = "working-copy://x-callback-url/chain/"
+  let msg = "Backup from Scriptable"
+  let cbu = new CallbackURL(baseURL)
+  cbu.addParameter("key", key)
+  cbu.addParameter("repo", repo)
+  cbu.addParameter("command", "commit")
+  cbu.addParameter("message", msg)
+  cbu.addParameter("limit", "999")
+  cbu.addParameter("command", "push")
+  await cbu.open()
+}
+
+function copyFile(srcFilePath, dstDir) {
+  let fm = FileManager.iCloud()
+  let filename = fm.fileName(filePath, true)
+  let dstFilePath = fm.joinPath(dstDir, filename)
+  fm.copy(srcFilePath, dstFilePath)
+}
+
+function removeFiles(dstDir) {
+  let fm = FileManager.iCloud()
+  let filePaths = allFiles(dstDir)
+  for (filePath of filePaths) {
+    fm.remove(filePath)
+  }
+}
+
+function allFiles(dir) {
+  let fm = FileManager.iCloud()
+  let files = fm.listContents(dir)
+  let filePaths = files.map(file => {
+    return fm.joinPath(dir, file)
+  })
+  return filePaths.filter(isShortcut)
+}
+
+function isShortcut(filePath) {
+  let fm = FileManager.local()
+  let ext = fm.fileExtension(filePath)
+  return ext == "shortcut"
+}
+
+async function promptDirSelection(msg) {
+  let alert = new Alert()
+  alert.title = "Select folder"
+  alert.message = msg
+  alert.addAction("OK")
+  await alert.presentAlert()
+}
